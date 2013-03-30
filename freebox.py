@@ -13,6 +13,8 @@
 #http://www.freebox-v6.fr/wiki/index.php?title=API#Transmission
 
 #torrent link : http://cdimage.debian.org/debian-cd/6.0.7/amd64/bt-cd/debian-6.0.7-amd64-netinst.iso.torrent
+#personal ip = "88.164.113.16:8000"
+
 
 import sys
 from getpass import getpass
@@ -37,7 +39,7 @@ class freeboxClient(object):
     
     def __init__(self, freebox_ip=None, fbx_login=None, fbx_password=None):
         super(freeboxClient, self).__init__()
-        self.freebox_ip = freebox_ip or "88.164.113.16:8000"
+        self.freebox_ip = freebox_ip or 'mafreebox.free.fr'
         self.fbx_login = fbx_login or "freebox"
         self.fbx_password = fbx_password
         self.freebox_url = "http://%s" % self.freebox_ip
@@ -95,6 +97,8 @@ class freeboxClient(object):
 def main():
     parser = OptionParser(usage="usage: %prog filename",
                          version="%prog 0.1")
+    parser.add_option("-i", "--freeboxip", dest="freebox_ip",
+             help="the freebox ip addr", metavar="freebox_ip", default="")
     parser.add_option("-f", "--file", dest="torrent_file",
              help="the torrent file to download", metavar=".torrent", default="")
     parser.add_option("-u", "--url", dest="url_to_download",
@@ -102,8 +106,10 @@ def main():
      
     (options, args) = parser.parse_args()
 
-    password = "ilea30.Nauru"#getpass('Freebox password: ')
-    fbx_client = freeboxClient(fbx_password=password)
+    password = getpass('Freebox password: ')
+    
+    freebox_ip = options.freebox_ip or 'mafreebox.free.fr'
+    fbx_client = freeboxClient(freebox_ip=freebox_ip, fbx_password=password)
     fbx_client.login()
     
     torrent_file = options.torrent_file
