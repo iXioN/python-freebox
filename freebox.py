@@ -62,33 +62,47 @@ class freeboxClient(object):
              raise WrongPassword()
         return True
     
+    def post(self, url, payload, files, referer=""):
+        """simple post"""
+        headers = {'Referer': referer, "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0", "Host":self.freebox_ip, "Content-Type":""}
+        post_request = self.session.post(url, data=payload, headers=headers, files=files)
+        return post_request
+    
+    def get(self, url, referer=""):
+        """simple get"""
+        headers = {'Referer': referer, "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0", "Host":self.freebox_ip, "Content-Type":""}
+        return self.session.get(url, headers=headers)
+    
+    
     def add_file_to_download(self, torrent_file, url_to_download):
         """ upload the torrent and start the download"""
         if torrent_file and url_to_download:
             raise('specify a file OR an url to download')
         
+        download_page = "%s/%s" % (self.freebox_url, DOWNLOAD_PAGE)     
+        
+        #get the page to get csrf token
+        get_download_page = self.get(download_page, download_page)
+        
         files = None
         if torrent_file:
             files = {'file': open(torrent_file, 'rb')}  
+            
         #action : download.cgi
         #encoded : multipart/form-data
-        
         #csrf_token token :'(
         #input file : name data
         #method : value="download.torrent_add"
         download_url = "%s/%s" % (self.freebox_url, DOWNLOAD_PAGE_API) 
-        download_page = "%s/%s" % (self.freebox_url, DOWNLOAD_PAGE)     
             
         payload = {
             'method':"download.torrent_add", 
-            'csrf_token':"BakzNScFVqWLJnqKgB4lrpsRX1TYRNUVqpdTXgthcrusXQfwkFn+EO/0ap60U4AM",
+            'csrf_token':"Z+nuZJA876jQSjI5o71ZuJqKLf37XeAD5gRXGoAxx8dPiQGNxIePQyAAc5ojKn1j",
             'user':"freebox",
             'ajax_iform':1,
             'url':url_to_download,
         }
-        
-        headers = {'Referer': download_page, "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0", "Host":self.freebox_ip, "Content-Type":""}
-        download_post_request = self.session.post(download_url, data=payload, headers=headers, files=files)
+        download_post_request = self.post(download_url, payload, files=files, referer=download_page)
         print download_post_request
            
         
