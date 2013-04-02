@@ -36,6 +36,12 @@ LOGIN_PAGE = "login.php"
 DOWNLOAD_PAGE = "download.php"
 DOWNLOAD_PAGE_API = "download.cgi"
 
+
+ERROR_CODE_MAPPING = {
+        '11':'duplicate download'
+}
+
+
 class freeboxClient(object):
     """a simple freebox client api"""
     
@@ -48,6 +54,7 @@ class freeboxClient(object):
         
         self.session = requests.session()
     
+    #simple method 
     def login(self):
         """
         the login method
@@ -58,45 +65,51 @@ class freeboxClient(object):
         }
         login_url = "%s/%s" % (self.freebox_url, LOGIN_PAGE)
         login_request = self.session.post(login_url, data=payload)
-        self.session.auth = (self.fbx_login, self.fbx_password)
-        
+                
         if login_request.url == login_url: #TODO: another cheking method
              raise WrongPassword()
         return True
     
-    def post(self, url, payload, files, referer=""):
-        """simple post"""
-        headers = {'Referer': referer, "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0", "Host":self.freebox_ip, }
-        post_request = self.session.post(url, data=payload, headers=headers, files=files)
-        return post_request
+    def post(self, url, payload, files):
+        """simple post, if resutl is a textarea with key value form, return a dict with the values"""
+        post_request = self.session.post(url, data=payload, files=files)
+        if post_request.ok:
+            result = None
+            result = html.fromstring(post_request.content)
+            try:
+                result = json.loads(result.value)
+            except (AttributeError, AttributeError), e:
+                pass
+            return post_request, result
+        return post_request, None
     
-    def get(self, url, referer=""):
+    def get(self, url):
         """simple get"""
-        headers = {'Referer': referer, "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0", "Host":self.freebox_ip, }
-        return self.session.get(url, headers=headers)
+        headers = {"Host":self.freebox_ip, }
+        return self.session.get(url)
     
-    def get_csrf_token(self, url, referer=""):
+    
+    #method to acces and post some datas
+    def get_csrf_token(self, url):
         """get the crsf token in the page url"""
-        request_page = self.get(url, referer)
+        request_page = self.get(url)
         tree = html.fromstring(request_page.content)
         for form in tree.forms:
             if 'csrf_token' in form.inputs:
                 return form.inputs['csrf_token'].value
-                
     
     def add_file_to_download(self, torrent_file, url_to_download):
         """ upload the torrent and start the download"""
         if torrent_file and url_to_download:
             raise('specify a file OR an url to download')
         
-        download_page = "%s/%s" % (self.freebox_url, DOWNLOAD_PAGE)     
-        
+        download_page = "%s/%s" % (self.freebox_url, DOWNLOAD_PAGE)
         #get the page to get csrf token
-        csrf_token = self.get_csrf_token(download_page, download_page)
+        csrf_token = self.get_csrf_token(download_page)
         
         files = None
         if torrent_file:
-            files = {'file': open(torrent_file, 'rb')}  
+            files = {'data': open(torrent_file, 'rb')}  
             
         download_url = "%s/%s" % (self.freebox_url, DOWNLOAD_PAGE_API) 
         payload = {
@@ -107,9 +120,16 @@ class freeboxClient(object):
             'url':url_to_download,
             'data':None,
         }
-        download_post_request = self.post(download_url, payload, files=files, referer=download_page)
-        print download_post_request
-           
+        download_post_request, result = self.post(download_url, payload, files=files)
+        
+        if result:
+            if 'errcode' in result:
+                print "Error while adding download : %s" % ERROR_CODE_MAPPING[result['errcode']]
+                return
+            else:
+                print "Downdload OK, id : %s" % (result.get('result', None))
+                return
+        print "Error while adding download http status: %s " % (download_post_request)
         
 
 
