@@ -1,6 +1,6 @@
 all: bootstrap
 
 bootstrap:
-	./bootstrap.py
+	[ -e bin/pip ] || virtualenv .
 	./bin/pip install -r requirements.txt
 
