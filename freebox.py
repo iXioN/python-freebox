@@ -22,6 +22,8 @@ from optparse import OptionParser
 
 import json
 import requests
+from lxml import html
+
 
 class FreeboxException(Exception):
     pass
@@ -64,15 +66,23 @@ class freeboxClient(object):
     
     def post(self, url, payload, files, referer=""):
         """simple post"""
-        headers = {'Referer': referer, "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0", "Host":self.freebox_ip, "Content-Type":""}
+        headers = {'Referer': referer, "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0", "Host":self.freebox_ip, }
         post_request = self.session.post(url, data=payload, headers=headers, files=files)
         return post_request
     
     def get(self, url, referer=""):
         """simple get"""
-        headers = {'Referer': referer, "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0", "Host":self.freebox_ip, "Content-Type":""}
+        headers = {'Referer': referer, "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0", "Host":self.freebox_ip, }
         return self.session.get(url, headers=headers)
     
+    def get_csrf_token(self, url, referer=""):
+        """get the crsf token in the page url"""
+        request_page = self.get(url, referer)
+        tree = html.fromstring(request_page.content)
+        for form in tree.forms:
+            if 'csrf_token' in form.inputs:
+                return form.inputs['csrf_token'].value
+                
     
     def add_file_to_download(self, torrent_file, url_to_download):
         """ upload the torrent and start the download"""
@@ -82,25 +92,20 @@ class freeboxClient(object):
         download_page = "%s/%s" % (self.freebox_url, DOWNLOAD_PAGE)     
         
         #get the page to get csrf token
-        get_download_page = self.get(download_page, download_page)
+        csrf_token = self.get_csrf_token(download_page, download_page)
         
         files = None
         if torrent_file:
             files = {'file': open(torrent_file, 'rb')}  
             
-        #action : download.cgi
-        #encoded : multipart/form-data
-        #csrf_token token :'(
-        #input file : name data
-        #method : value="download.torrent_add"
         download_url = "%s/%s" % (self.freebox_url, DOWNLOAD_PAGE_API) 
-            
         payload = {
             'method':"download.torrent_add", 
-            'csrf_token':"Z+nuZJA876jQSjI5o71ZuJqKLf37XeAD5gRXGoAxx8dPiQGNxIePQyAAc5ojKn1j",
+            'csrf_token':csrf_token,
             'user':"freebox",
             'ajax_iform':1,
             'url':url_to_download,
+            'data':None,
         }
         download_post_request = self.post(download_url, payload, files=files, referer=download_page)
         print download_post_request
@@ -119,7 +124,6 @@ def main():
                help="the http or magnet url", metavar="url", default="")
      
     (options, args) = parser.parse_args()
-
     password = getpass('Freebox password: ')
     
     freebox_ip = options.freebox_ip or 'mafreebox.free.fr'
