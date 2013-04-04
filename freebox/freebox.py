@@ -22,7 +22,7 @@ from optparse import OptionParser
 
 import json
 import requests
-from lxml import html
+import lxml
 
 
 class FreeboxException(Exception):
@@ -75,7 +75,7 @@ class freeboxClient(object):
         post_request = self.session.post(url, data=payload, files=files)
         if post_request.ok:
             result = None
-            result = html.fromstring(post_request.content)
+            result = lxml.html.fromstring(post_request.content)
             try:
                 result = json.loads(result.value)
             except (AttributeError, AttributeError), e:
@@ -93,7 +93,7 @@ class freeboxClient(object):
     def get_csrf_token(self, url):
         """get the crsf token in the page url"""
         request_page = self.get(url)
-        tree = html.fromstring(request_page.content)
+        tree = lxml.html.fromstring(request_page.content)
         for form in tree.forms:
             if 'csrf_token' in form.inputs:
                 return form.inputs['csrf_token'].value
