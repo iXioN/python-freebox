@@ -1,3 +1,4 @@
 requests
 ipdb
 lxml
+docopt
