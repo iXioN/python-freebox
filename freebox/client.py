@@ -10,7 +10,7 @@
 
 import json
 import requests
-from lxml import html
+from bs4 import BeautifulSoup
 
 class FreeboxException(Exception):
     pass
@@ -54,9 +54,9 @@ class freeboxClient(object):
         post_request = self.session.post(url, data=payload, files=files)
         if post_request.ok:
             result = None
-            result = html.fromstring(post_request.content)
+            soup = BeautifulSoup(post_request.content)
             try:
-                result = json.loads(result.value)
+                result = json.loads(soup.text)
             except (AttributeError, AttributeError), e:
                 pass
             return post_request, result
@@ -64,15 +64,13 @@ class freeboxClient(object):
     
     def get(self, url):
         """simple get"""
-        headers = {"Host":self.host, }
         return self.session.get(url)
     
     #method to acces and post some datas
     def get_csrf_token(self, url):
         """get the crsf token in the page url"""
         request_page = self.get(url)
-        tree = html.fromstring(request_page.content)
-        for form in tree.forms:
-            if 'csrf_token' in form.inputs:
-                return form.inputs['csrf_token'].value
+        soup = BeautifulSoup(request_page.content)
+        csrf_input = soup.find('input', {'name': 'csrf_token'})
+        return csrf_input.attrs.get('value', None)
     
