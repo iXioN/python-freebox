@@ -37,19 +37,8 @@ from getpass import getpass
 from client import freeboxClient
 from download import Downloader
 
-
 def main():
-    # parser = OptionParser(usage="usage: %prog filename",
-    #                      version="%prog 0.1")
-    # parser.add_option("-i", "--freeboxip", dest="freebox_ip",
-    #          help="the freebox ip addr", metavar="freebox_ip", default="")
-    # parser.add_option("-f", "--file", dest="torrent_file",
-    #          help="the torrent file to download", metavar=".torrent", default="")
-    # parser.add_option("-u", "--url", dest="url_to_download",
-    #            help="the http or magnet url", metavar="url", default="")
-    #  
-    # (options, args) = parser.parse_args()
-    
+    #docopt parse the args
     arguments = docopt(__doc__, version='0.1.1-dev') #TODO get the version from __init__.py
     
     host = arguments.get('--host', 'mafreebox.free.fr')
@@ -61,12 +50,13 @@ def main():
     client_mode = arguments.get('client', False)
     download_mode = arguments.get('download', False)
     
-    
+    #login 
     fbx_client = freeboxClient(host, port, None, password)#params are host, port, username, password
     login_sucess = fbx_client.login()
     if client_mode:
         print "login success : %s" % login_sucess
     
+    #if download, call the downloader
     if download_mode:
         path_or_url = arguments.get('PATH_OR_URL', None)
         if not path_or_url:
@@ -81,9 +71,7 @@ def main():
             torrent_url = path_or_url
         downloader = Downloader(fbx_client)
         downloader.add_file_to_download(torrent_file, torrent_url)
-    
-   
-   
+
 if __name__ == "__main__":
     try:
        main()

@@ -12,9 +12,10 @@ DOWNLOAD_PAGE_API = "download.cgi"
 
 
 ERROR_CODE_MAPPING = {
-        11:'duplicate download'
+        11:'error occured'
 }    
-    
+
+ 
 class Downloader(object):
     """get a client """
     def __init__(self, client):
@@ -41,11 +42,11 @@ class Downloader(object):
             'csrf_token':csrf_token,
             'user':"freebox",
             'ajax_iform':1,
-            'url':url_to_download,
-            'data':None,
+            'url':"" if url_to_download is None else url_to_download,
         }
+        if not torrent_file:
+            payload['data'] = None
         download_post_request, result = self.client.post(download_url, payload, files=files)
-        
         if result:
             if 'errcode' in result:
                 print "Error while adding download : %s" % ERROR_CODE_MAPPING[result['errcode']]
