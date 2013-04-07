@@ -35,7 +35,7 @@ setup(name='freebox',
     url='https://github.com/iXioN/python-freebox.git',
     packages=['freebox', ],
     entry_points={
-        'console_scripts': ['freebox = freebox.freebox:main'],#TODO : add downloader
+        'console_scripts': ['freebox = freebox.freebox:main'],
     },
     #test_suite='python-freebox.tests.suite',
     install_requires=requirements,)
