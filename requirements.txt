@@ -1,4 +1,4 @@
 ipdb
 docopt==0.6.1
-requests==1.2.0
+requests==2.20.0
 BeautifulSoup4==4.1.3
